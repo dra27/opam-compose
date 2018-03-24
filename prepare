@@ -13,6 +13,9 @@ for i in * ; do
   fi
 done
 
+unset DIRS[opam-compose]
+unset DIRS[_build]
+
 for i in $(opam install $1 --show --json output.json > /dev/null && jq -r '.solution | map(select(has("install")) | "\(.install.name).\(.install.version)") | join("\n")' output.json) ; do
   PACKAGE=${i%%.*}
   VERSION=${i#*.}
