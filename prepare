@@ -1,0 +1,47 @@
+#!/bin/bash
+
+PACKAGE_ROOT=.packages
+
+mkdir -p $PACKAGE_ROOT
+
+# TODO This is how we work out what must be moved $PACKAGE_ROOT
+declare -A DIRS
+
+for i in * ; do
+  if [[ -d $i ]] ; then
+    DIRS[$i]=1
+  fi
+done
+
+for i in $(opam install $1 --show --json output.json > /dev/null && jq -r '.solution | map(select(has("install")) | "\(.install.name).\(.install.version)") | join("\n")' output.json) ; do
+  PACKAGE=${i%%.*}
+  VERSION=${i#*.}
+  unset DIRS[$PACKAGE]
+  if [[ ! -d $PACKAGE ]] ; then
+    if [[ -d $PACKAGE_ROOT/$PACKAGE ]] ; then
+      echo "$PACKAGE re-enabled"
+      mv $PACKAGE_ROOT/$PACKAGE .
+    else
+      git clone $(opam show $i --field=dev-repo: | sed -e "s/git+//") $PACKAGE
+    fi
+  fi
+  cd $PACKAGE
+  TAG=$(git describe --tags --exact-match 2>/dev/null)
+  if [[ $TAG != $VERSION ]] ; then
+    if ! git checkout $VERSION 2>/dev/null ; then
+      if git checkout v$VERSION 2>/dev/null ; then
+        VERSION=v$VERSION
+      else
+        echo -e "\e[31mERROR\e[0m Failed to checkout $VERSION"
+      fi
+    fi
+  fi
+  cd ..
+done
+
+for i in "${!DIRS[@]}" ; do
+  echo "Disabling $i"
+  mv $i $PACKAGE_ROOT/
+done
+
+rm output.json

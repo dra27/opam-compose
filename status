@@ -1,0 +1,19 @@
+#!/bin/bash
+
+for i in *  ; do
+  if [[ -d $i ]] ; then
+    pushd $i > /dev/null
+    BRANCH=$(git symbolic-ref -q --short HEAD 2>/dev/null)
+    TAG=$(git describe --tags --exact-match 2>/dev/null)
+    if [[ -n $TAG ]] ; then
+      COLOR=32
+      if [[ -n $BRANCH ]] ; then
+        BRANCH=" \e[0m(\e[34m$BRANCH\e[0m)"
+      fi
+    else
+      COLOR=31
+    fi
+    popd > /dev/null
+    echo -e "$i: \e[${COLOR}m$TAG$BRANCH\e[0m"
+  fi
+done

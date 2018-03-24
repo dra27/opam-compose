@@ -1,2 +1,5 @@
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
+
+prepare text eol=lf
+status text eol=lf
